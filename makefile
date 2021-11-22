@@ -7,10 +7,10 @@
 #-------------------------------------------------------------------------------------------
 
 # library for programs  
-BINLIB=WSCLIB
+BINLIB=WSCCBS
 
 # library for data 
-FILELIB=WSCFIL
+FILELIB=WSCCBS
 
 # library for CNX
 CNXLIB=VALENCE52P
@@ -170,20 +170,25 @@ endif
 testing_BNDDIRLIST = testing.entrymod logerrors.entrysrv
 empclshst_BNDDIRLIST = empclshst.entrymod logerrors.entrysrv 
 logerrors_BNDDIRLIST = logerrors.entrymod 
-
+gentable_BNDDIRLIST = logerrors.entrysrv gentable.entrymod
+test_BNDDIRLIST = test.entrymod logerrors.entrysrv
+gentable2_BNDDIRLIST = logerrors.entrysrv gentable2.entrymod
 
 
 
 # everything you want to build here
-all: logerrors.srvpgm tmpeqp.pffile
-#all: empoccchg.sqlobj uclxref.sqlobj return_employee_occupation_description.sqlobj empclshst.pgm unxrefcnx.cnxpgm
+all: tables programs
 
+tables: tabledef.sqlobj
+programs: gentable.pgm test.pgm gentable2.pgm
 
 # dependency lists
 empclshst.pgm: empclshst.bnddir empclshst.sqlrpgmod
 logerrors.srvpgm: logerrors.bnddir logerrors.sqlrpgmod logerrors.bndsrc
 logerrors.rpgmod: logerrors.sqlrpgle
- 
+gentable.pgm: gentable.bnddir gentable.sqlrpgmod
+test.pgm: test.bnddir test.sqlrpgmod
+gentable2.pgm: gentable2.bnddir gentable2.sqlrpgmod 
  
 
 
