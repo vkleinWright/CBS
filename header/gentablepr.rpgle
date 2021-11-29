@@ -91,13 +91,16 @@
        // Prototype for procedure: runFieldCursor
        // --------------------------------------------------
        DCL-PR runFieldCursor EXTPROC('runFieldCursor');
-         sysTableName  char(10) const;
+         sysTableName    char(10) const;
+         longNameLength  packed(3:0) const;
+         shortNameLength packed(3:0) const;
+         typeDefLength  packed(3:0) const;
        END-PR ;
 
         // --------------------------------------------------
-        // Prototype for procedure:  fetchNextEmployeeToCheck
+        // Prototype for procedure:  fetchNextColumn
         // --------------------------------------------------
-        DCL-PR fetchNextEmployeeToCheck IND EXTPROC('fetchNextEmployeeToCheck');
+        DCL-PR fetchNextColumn IND EXTPROC('fetchNextColumn');
             cursorOpen  ind;
             field_def   char(50);
             column_def  char(22);
@@ -124,26 +127,28 @@
        // Prototype for procedure: runLabelCursor
        // --------------------------------------------------
        DCL-PR runLabelCursor EXTPROC('runLabelCursor');
-         sysTableName  char(10) const;
-         textFlag      char(1) const;
+         sysTableName   char(10) const;
+         textFlag       char(1) const;
+         longNameLength packed(3:0) const;
        END-PR ;
 
         // --------------------------------------------------
         // Prototype for procedure:  fetchNextLabel
         // --------------------------------------------------
         DCL-PR fetchNextLabel IND EXTPROC('fetchNextLabel');
-            cursorOpen  ind;
+            cursorOpen    ind;
             field_def     char(50);
             field_lbl     char(50);
             field_text    char(50);
+            column_text   char(50);
         END-PR ;
 
         // --------------------------------------------------
         // Prototype for procedure: setLabelCursor
         // --------------------------------------------------
         DCL-PR setLabelCursor EXTPROC('setLabelCursor');
-            action     ind const;
-            cursorOpen ind;
+            action         ind const;
+            cursorOpen     ind;
         END-PR ;
 
        // --------------------------------------------------
@@ -153,6 +158,7 @@
            upperTableName    Char(50) const;
            sysTableName      CHAR(10) CONST;
            upperSysTableName CHAR(10) CONST;
+           longNameLength    packed(3:0) const;
            type              char(1) const;  // R - regular  T - temporal
        END-PR ;
 
@@ -169,4 +175,14 @@
        // --------------------------------------------------
        DCL-PR addLog EXTPROC('addLog');
          upperTableName CHAR(50) CONST;
+       END-PR ;
+
+       // --------------------------------------------------
+       // Prototype for procedure: fetchMaxFieldLengths
+       // --------------------------------------------------
+       DCL-PR fetchMaxFieldLengths EXTPROC('fetchMaxFieldLengths');
+         lowerSysTableName char(10) const;
+         longNameLength    packed(3:0);
+         shortNameLength   packed(3:0);
+         typeDefLength    packed(3:0);
        END-PR ;

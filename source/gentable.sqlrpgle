@@ -35,6 +35,13 @@
      Dcl-c SPACES_   '    ';
      Dcl-c crlf      x'0D25';
      Dcl-c lf        x'25';
+     Dcl-c COLUMN_SPACES   '           ';
+     Dcl-c TWO_SPACES      '  ';
+     Dcl-c COLUMN_TEXT     'FOR COLUMN ';
+     Dcl-c JUST_SPACES      '                                                 ';
+     Dcl-c NOT_NULL        'NOT NULL';
+
+
 
      Dcl-s longName   char(50);
      Dcl-s shortName  char(10);
@@ -100,6 +107,12 @@
 
 
          Dcl-s filePath char(150);
+         Dcl-s longNameLength  packed(3:0);
+         Dcl-s shortNameLength packed(3:0);
+         Dcl-s typeDefLength packed(3:0);
+
+
+         fetchMaxFieldLengths(sysTableName : longNameLength : shortNameLength : typeDefLength);
 
          filePath =  %trim(repoAddr) + '/source/' + %trim(sysTableName) + '.sql' ;
 
@@ -118,7 +131,7 @@
 
          // add fields (for R and T)
 
-         runFieldCursor(sysTableName);
+         runFieldCursor(sysTableName : longNameLength : shortNameLength : typeDefLength) ;
 
          // addHousekeeping
          Select;
@@ -136,7 +149,7 @@
          closeColumnList(upperSysTableName);
 
          // add lables
-         writeLabels(upperTableName : tableName : upperSysTableName : type);
+         writeLabels(upperTableName : tableName : upperSysTableName : longNameLength : type);
 
          // add temporal history
          If type = TEMPORAL;
@@ -156,22 +169,32 @@
         // --------------------------------------------------
         DCL-PROC runFieldCursor EXPORT;
           Dcl-Pi *N;
-            sysTableName  like(shortName) const; // short name
+            sysTableName    like(shortName) const; // short name
+            longNameLength  packed(3:0) const;
+            shortNameLength packed(3:0) const;
+            typeDefLength  packed(3:0) const;
           End-Pi ;
 
-          Dcl-s cursorOpen    ind;
-          Dcl-s field_def     like(longName);
-          Dcl-s column_def    char(22);
-          Dcl-s type_def      char(12);
-          Dcl-s default_def   char(12);
+          Dcl-s cursorOpen      ind;
+          Dcl-s field_def       like(longName);
+          Dcl-s column_def      char(22);
+          Dcl-s type_def        char(12);
+          Dcl-s default_def     char(12);
+          Dcl-s lineToWrite     char(200);
+          Dcl-s CCSIDstr        char(8);
+
+
 
            Exec SQL
              declare c_fieldInfo cursor for
-                select upper(cast( replace(text, ' ', '_') as char(50))) ,
-                       upper(cast(case when fld = '' then ''  else 'FOR column '|| fld end  as char(22))),
+                select upper(cast( replace(trim(text), ' ', '_') as char(50))) ,
+                      -- upper(cast(case when fld = '' then ''  else 'FOR column '|| fld end  as char(22))),
+                       upper(cast(fld  as char(22))),
                        cast(case
                           when upper(data_type) = 'DATE' then 'DATE'
                           when upper(data_type) = 'TIMESTMP' then 'TIMESTAMP'
+                          when upper(data_type) = 'TIMESTAMP' then 'TIMESTAMP'
+                          when upper(data_type) = 'TMSP' then 'TIMESTAMP'
                           when upper(data_type) = 'SMALLINT' then 'SMALLINT'
                           when upper(data_type) = 'BIGINT' then 'BIGINT'
                           when upper(data_type) = 'INTEGER' then 'INTEGER'
@@ -187,10 +210,52 @@
 
 
 
-           DoW  fetchNextEmployeeToCheck(cursorOpen : field_def : column_def : type_def : default_def);
+           DoW  fetchNextColumn(cursorOpen : field_def : column_def : type_def : default_def);
 
-             writeLine( SPACES_ + %trim(field_def) +  '  ' +  %trim(column_def)  +  '  ' +
-                        %trim(type_def) +  '  ' +  %trim(default_def) );
+            If %scan ('CHAR' : type_def) > 0;
+              CCSIDstr = 'CCSID 37';
+            Else;
+              CCSIDstr = '        ';
+            EndIf;
+
+       //    lineToWrite =  SPACES_ + %trim(field_def) ;
+           select;
+               when shortNameLength > 0 and %trim(column_def) = '';
+                    lineToWrite = SPACES_ + %trim(field_def) +
+                                  // padding before short name
+                                  %subst(JUST_SPACES : 1 : %int(longNameLength) - %len(%trim(field_def)))  +
+                                  TWO_SPACES + COLUMN_SPACES  +
+                                  // padding for missing short name
+                                  %subst(JUST_SPACES : 1 : %int(shortNameLength)) +
+                                  //%trim(column_def)  +  '  ' +
+                                  TWO_SPACES + %trim(type_def) +
+                                  // padding after type def
+                                  %subst(JUST_SPACES : 1 : %int(typeDefLength) - %len(%trim(type_def))) +
+                                  // ccsid or spaces
+                                  TWO_SPACES + CCSIDstr + TWO_SPACES +
+                                  NOT_NULL + TWO_SPACES + %trim(default_def) + ',';
+
+               when shortNameLength > 0 ;
+                    lineToWrite = SPACES_ + %trim(field_def) +
+                                  // padding before short name
+                                  %subst(JUST_SPACES : 1 : %int(longNameLength) - %len(%trim(field_def)))  +
+                                  // 'FOR COLUMN'
+                                  TWO_SPACES + COLUMN_TEXT +
+                                  // short name
+                                  %trim(column_def)    +
+                                  // padding after short name
+                                  %subst(JUST_SPACES : 1 : %int(shortNameLength) - %len(%trim(column_def))) +
+                                  //%trim(column_def)  +  '  ' +
+                                  TWO_SPACES + %trim(type_def) +
+                                  // padding after type def
+                                  %subst(JUST_SPACES : 1 : %int(typeDefLength) - %len(%trim(type_def))) +
+                                  // ccsid or spaces
+                                  TWO_SPACES + CCSIDstr + TWO_SPACES +
+                                  NOT_NULL + TWO_SPACES + %trim(default_def) + ',' ;
+
+             EndSl;
+
+             WriteLine(lineToWrite);
 
            EndDo;
 
@@ -239,11 +304,11 @@
 
 
         // --------------------------------------------------
-        // Procedure name: fetchNextEmployeeToCheck
+        // Procedure name: fetchNextColumn
         // Purpose:
         // Returns:
         // --------------------------------------------------
-        DCL-PROC fetchNextEmployeeToCheck EXPORT;
+        DCL-PROC fetchNextColumn EXPORT;
           Dcl-Pi *N IND;
             cursorOpen  ind;
             field_def   like(longName);
@@ -491,13 +556,13 @@
 
           Dcl-s pValue char(200);
 
-         pValue =  SPACES_ + 'START_TS  TIMESTAMP(12) NOT NULL GENERATED ALWAYS AS ROW BEGIN, ';
+         pValue =  SPACES_ + 'START_TS   TIMESTAMP(12) NOT NULL GENERATED ALWAYS AS ROW BEGIN, ';
          writeLine(pvalue);
-         pValue =  SPACES_ + 'END_TS    TIMESTAMP(12) NOT NULL GENERATED ALWAYS AS ROW END,';
+         pValue =  SPACES_ + 'END_TS     TIMESTAMP(12) NOT NULL GENERATED ALWAYS AS ROW END,';
          writeLine(pvalue);
-         pValue =  SPACES_ + 'TS_ID     TIMESTAMP(12) GENERATED ALWAYS AS TRANSACTION START ID,';
+         pValue =  SPACES_ + 'TS_ID      TIMESTAMP(12) GENERATED ALWAYS AS TRANSACTION START ID,';
          writeLine(pvalue);
-         pValue =  SPACES_ + 'PERIOD SYSTEM_TIME (START_TS, END_TS),';
+         pValue =  SPACES_ + 'PERIOD SYSTEM_TIME (START_TS, END_TS)';
          writeLine(pvalue);
 
          return ;
@@ -518,7 +583,7 @@
 
          spaces = %subst(just_spaces : 1 : gap);
 
-         pValue =  SPACES_ + 'USERID' + SPACES_ + 'VARchar(18)  CCSID 37     NOT NULL  DEFAULT USER,';
+         pValue =  SPACES_ + 'USERID' + SPACES_ + ' VARCHAR(18)  CCSID 37     NOT NULL  DEFAULT USER,';
          writeLine(pvalue);
 
          return ;
@@ -533,13 +598,9 @@
        DCL-PROC addUpdatedBy EXPORT;
          Dcl-s pValue char(200);
          Dcl-s just_spaces char(50);
-        // Dcl-s addSpaces varchar(50);
-        // Dcl-s gap int(3) inz(5);
 
-        // addSpaces = %subst(just_spaces : 1 : gap);
-
-         pValue =  SPACES_ + 'UPDATED_BY' +
-                         'FOR COLUMN    UPDATEDBY  VARchar(18)  CCSID 37     NOT NULL  DEFAULT USER,';
+         pValue =  SPACES_ + 'UPDATED_BY ' +
+                         'FOR COLUMN UPDATEDBY  VARCHAR(18)  CCSID 37     NOT NULL  DEFAULT USER,';
          writeLine(pvalue);
 
          return ;
@@ -556,13 +617,14 @@
          Dcl-s gap int(3) inz(10);
 
 
-         pValue =  SPACES_ + 'ADDED_BY FOR COLUMN ADDEDBY    VARchar(18) ALLOCATE(18) CCSID 37 NOT NULL DEFAULT USER , ';
+         pValue =  SPACES_ + 'ADDED_BY   FOR COLUMN ADDEDBY    VARCHAR(18) ALLOCATE(18) CCSID 37 NOT NULL DEFAULT USER , ';
          writeLine(pvalue);
 
-
-         pValue =  SPACES_ + 'ADDED_ON FOR COLUMN ADDEDON    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ,';
+         pValue =  SPACES_ + 'ADDED_ON   FOR COLUMN ADDEDON    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ,';
          writeLine(pvalue);
+
          addUpdatedBy();
+
          pValue =  SPACES_ + 'UPDATED_ON FOR COLUMN UPDATEDON  TIMESTAMP GENERATED BY DEFAULT FOR EACH ROW ON UPDATE AS ROW CHANGE TIMESTAMP NOT NULL';
          writeLine(pvalue);
 
@@ -594,7 +656,8 @@
 
          Exec SQL
           insert into tabledef
-            (table_name, text, fld, data_type, data_size, numeric_scale, default_val)
+            (table_name, text, fld, data_type, data_size, numeric_scale,
+                                                     default_val, column_text)
             select
               :sysTableName,
               cast( substr(line, 1, locate_in_string(line, ',') -1) as varchar(50)),
@@ -607,10 +670,18 @@
                --the fifth
               cast( substr(line,   locate_in_string(line, ',', 1,4) +1, locate_in_string(line, ',',1,  5) - locate_in_string(line, ',', 1,4) -1) as char(12)),
                --the sixth
-              cast( substr(line,   locate_in_string(line, ',', 1,5) +1, 1) as char(1))
+               cast( substr(line,   locate_in_string(line, ',', 1,5) +1, locate_in_string(line, ',',1,  6) - locate_in_string(line, ',', 1,5) -1) as char(1)),
+               --the seventh
+               cast( substr(line,   locate_in_string(line, ',', 1,6) +1) as char(50))
              FROM
               TABLE(QSYS2/IFS_READ(
-               PATH_NAME => :mypath))x  ;
+               PATH_NAME => :mypath))x
+                 where substr(trim(line),1,1) in ('A', 'a', 'B', 'b', 'C', 'c', 'D', 'd', 'E', 'e',
+                                                  'F', 'f', 'G', 'g', 'H', 'h', 'I', 'i', 'J', 'j',
+                                                  'K', 'k', 'L', 'l', 'M', 'm', 'N', 'n', 'O', 'o',
+                                                  'P', 'p', 'Q', 'q', 'R', 'r', 'S', 's', 'T', 't',
+                                                  'U', 'u', 'V', 'v', 'W', 'w', 'X', 'x', 'Y', 'y',
+                                                  'Z', 'z');
 
 
                 If (sqlstt <> NO_MORE_ROWS and sqlstt <> '00000');
@@ -633,29 +704,49 @@
           Dcl-Pi *N;
             sysTableName  like(shortName) const; // short name
             textFlag      char(1) const;
+            longNameLength packed(3:0) const;
           End-Pi ;
 
           Dcl-s cursorOpen    ind;
           Dcl-s field_def     like(longName);
           Dcl-s field_lbl     like(longName);
           Dcl-s field_text    like(longName);
+          Dcl-s column_text   like(longName);
 
 
            Exec SQL
              declare c_labels cursor for
-                select  upper( replace(text, ' ', '_') ) ,
-                       proper_case(text), upper(substr(text, 1,1))||lower(substr(text,2))
+                select  upper( replace(trim(text), ' ', '_') ) ,
+                       proper_case(text),
+                       upper(substr(text, 1,1))||lower(substr(text,2)),
+                       upper(substr(ctext, 1,1))||lower(substr(ctext,2))
                     from   tabledef t
                       where table_name =  :sysTableName
                       order by  rrn(t);
 
+           If textFlag <> 'Y';
+             // for alignment
+              writeLine ('--' + SPACES_ +  %subst(JUST_SPACES : 1 : %int(longNameLength) - 2) +
+                                     ' IS ''' +
+                                     'AAAAA               BBBBB               CCCCC               ''');
+           EndIf;
 
-
-           DoW  fetchNextLabel(cursorOpen : field_def : field_lbl : field_text);
+           DoW  fetchNextLabel(cursorOpen : field_def : field_lbl : field_text : column_text);
             If textFlag = 'Y';
-             writeLine( SPACES_ + %trim(field_def) +  ' IS TEXT ''' +  %trim(field_text)  + ''',') ;
+
+            If column_text = '';
+              column_text = field_text;
+            EndIf;
+             writeLine( SPACES_ + %trim(field_def) +
+                                  // padding before short name
+                                  %subst(JUST_SPACES : 1 : %int(longNameLength) - %len(%trim(field_def)))  +
+                                  ' TEXT IS ''' +  %trim(column_text)  + ''',') ;
             Else ;
-               writeLine( SPACES_ +  %trim(field_def) +  ' IS ''' +  %trim(field_lbl)  + ''',');
+
+               writeLine( SPACES_ +  %trim(field_def) +
+                                     // padding before short name
+                                     %subst(JUST_SPACES : 1 : %int(longNameLength) - %len(%trim(field_def)))  +
+                                     ' IS ''' +  %trim(field_lbl)  + ''',');
             EndIf;
 
            EndDo;
@@ -712,6 +803,7 @@
             field_def     like(longName);
             field_lbl     like(longName);
             field_text    like(longName);
+            column_text   like(longName);
           End-Pi ;
 
           Dcl-s fileEnd ind inz(*off);
@@ -722,7 +814,7 @@
 
             Exec SQL
               fetch next from c_labels
-              into :field_def, :field_lbl, :field_text;
+              into :field_def, :field_lbl, :field_text, :column_text;
 
 
             fileEnd = (sqlstt = NO_MORE_ROWS or sqlstt <> '00000');
@@ -753,29 +845,52 @@
            upperTableName    like(longName) const;
            tableName         like(shortName) const;
            upperSysTableName like(shortName) const;
+           longNameLength    packed(3:0) const;
            type              char(1) const;  // R - regular  T - temporal
          End-Pi ;
+
+         Dcl-s numberOfSpaces packed(3:0);
 
          writeLine (' ');
          writeLine (' ');
          writeLine ('LABEL ON TABLE FILELIB/' + %trim(upperTableName));
-         writeLine ('  IS ''   ''');
+         writeLine ('  IS ''   ''                           -- <====<<<<<<');
 
 
          writeLine (' ');
          writeLine (' ');
          writeLine ('LABEL ON COLUMN FILELIB/' + %trim(upperTableName));
          writeLine ('(');
-         runLabelCursor(tableName : 'N');
+         runLabelCursor(tableName : 'N' : longNameLength);
          If type <> WORK;
-            writeLine( SPACES_ + %trim(UpperSysTableName) + 'ID  IS ''' + %trim(UpperSysTableName) + ' ID'',');
+            If longNameLength > %len(%trim(UpperSysTableName)) + 2;
+              numberOfSpaces = longNameLength - %len(%trim(UpperSysTableName))  -1;
+            EndIf;
+
+            writeLine( SPACES_ + %trim(UpperSysTableName) + 'ID' +
+                                 %subst(JUST_SPACES : 1 : numberOfSpaces) +
+                                 'IS ''' +  %trim(UpperSysTableName) + ' ID'',');
          EndIf;
 
          If type = REGULAR;
-            writeLine ( SPACES_ + 'ADDED_BY IS ''Added by'' , ');
-            writeLine ( SPACES_ + 'ADDED_ON IS ''Added on'' , ');
-            writeLine ( SPACES_ + 'UPDATED_BY IS ''Updated by'' , ');
-            writeLine ( SPACES_ + 'UPDATED_ON IS ''Updated on'' ');
+            If longNameLength > 8;
+              numberOfSpaces = longNameLength - 7;
+            EndIf;
+            writeLine ( SPACES_ + 'ADDED_BY' +
+                                   %subst(JUST_SPACES : 1 : numberOfSpaces) +
+                                   'IS ''Added by'' , ');
+            writeLine ( SPACES_ + 'ADDED_ON' +
+                                   %subst(JUST_SPACES : 1 : numberOfSpaces) +
+                                   'IS ''Added on'' , ');
+            If longNameLength > 10;
+              numberOfSpaces = longNameLength - 9;
+            EndIf;
+            writeLine ( SPACES_ + 'UPDATED_BY' +
+                                   %subst(JUST_SPACES : 1 : numberOfSpaces) +
+                                   'IS ''Updated by'' , ');
+            writeLine ( SPACES_ + 'UPDATED_ON' +
+                                   %subst(JUST_SPACES : 1 : numberOfSpaces) +
+                                   'IS ''Updated on'' ');
          EndIf;
          writeLine (');');
 
@@ -783,15 +898,35 @@
 
          writeLine ('LABEL ON COLUMN FILELIB/' + %trim(upperTableName));
          writeLine ('(');
-         runLabelCursor(tableName : 'Y');
+         runLabelCursor(tableName : 'Y' : longNameLength);
          If type <> WORK;
-           writeLine( SPACES_ + %trim(UpperSysTableName) + 'ID TEXT  IS ''' + %trim(UpperSysTableName) + ' ID'',');
+            If longNameLength > %len(%trim(UpperSysTableName)) + 2;
+              numberOfSpaces = longNameLength - %len(%trim(UpperSysTableName)) -1 ;
+            EndIf;
+           writeLine( SPACES_ + %trim(UpperSysTableName) + 'ID' +
+                                %subst(JUST_SPACES : 1 : numberOfSpaces) +
+                                'TEXT IS ''' +
+                                %trim(UpperSysTableName) + ' ID'',');
          EndIf;
          If type = REGULAR;
-            writeLine ( SPACES_ + 'ADDED_BY TEXT IS ''Added by'' , ');
-            writeLine ( SPACES_ + 'ADDED_ON TEXT IS ''Added on'' , ');
-            writeLine ( SPACES_ + 'UPDATED_BY TEXT IS ''Updated by'' , ');
-            writeLine ( SPACES_ + 'UPDATED_ON TEXT IS ''Updated on'' ');
+            If longNameLength > 8;
+              numberOfSpaces = longNameLength - 7;
+            EndIf;
+            writeLine ( SPACES_ + 'ADDED_BY' +
+                                   %subst(JUST_SPACES : 1 : numberOfSpaces) +
+                                   'TEXT IS ''Added by'' , ');
+            writeLine ( SPACES_ + 'ADDED_ON' +
+                                   %subst(JUST_SPACES : 1 : numberOfSpaces) +
+                                   'TEXT IS ''Added on'' , ');
+            If longNameLength > 10;
+              numberOfSpaces = longNameLength - 9;
+            EndIf;
+            writeLine ( SPACES_ + 'UPDATED_BY' +
+                                   %subst(JUST_SPACES : 1 : numberOfSpaces) +
+                                   'TEXT IS ''Updated by'' , ');
+            writeLine ( SPACES_ + 'UPDATED_ON' +
+                                   %subst(JUST_SPACES : 1 : numberOfSpaces) +
+                                   'TEXT IS ''Updated on'' ');
          EndIf;
          writeLine (');');
 
@@ -816,11 +951,11 @@
          writeLine ('');
          writeLine ('CREATE OR REPLACE TABLE FILELIB/' + %trim(upperTableName) +
                         '_HIST FOR SYSTEM NAME ' + %trim(upperSysTableName) + 'H LIKE ' +
-                        %trim(upperTableName) + ' ;');
+                        %trim(upperTableName) + ' ;                  -- <====<<<<<<');
 
          writeLine ('');
          writeLine ('LABEL ON TABLE FILELIB/' + %trim(upperTableName) +
-                        '_HIST IS ''   hist'' ;');
+                        '_HIST IS ''   hist'' ;                -- <====<<<<<< ');
 
           writeLine ('');
           writeLine ('ALTER TABLE FILELIB/' + %trim(upperTableName) +
@@ -845,6 +980,36 @@
          writeLine ('');
          writeLine ('CALL LOG_SQL_BUILD(''' + %trim(upperTableName) +
                      ''', ''TABLE'', ''FILELIB'',  ''SOURCE_DOC'', ''SQL_LOC'');');
+
+         return ;
+       END-PROC ;
+
+
+       // --------------------------------------------------
+       // Procedure name: fetchMaxFieldLengths
+       // Purpose:
+       // Returns:
+       // Parameter:      longNameLength
+       // Parameter:      shortNameLength
+       // --------------------------------------------------
+       DCL-PROC fetchMaxFieldLengths EXPORT;
+         DCL-PI *N;
+           lowerSysTableName like(shortName) const;
+           longNameLength packed(3:0);
+           shortNameLength packed(3:0);
+           typeDefLength packed(3:0);
+         END-PI ;
+
+         Exec SQL
+          select max(length(trim(text))), max(length(trim(fld))),
+                 max(length(trim(data_type))
+                  + case when trim(data_size) <> '' then 2 else 0 end
+                  + length(trim(data_size))
+                  + case when numeric_scale = '' then 0
+                         else length(trim(numeric_scale)) +1 end )
+           into :longNameLength, :shortNameLength, :typeDefLength
+           from tabledef
+           where tabname = :lowerSysTableName;
 
          return ;
        END-PROC ;
