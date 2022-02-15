@@ -1,5 +1,5 @@
 #
-#                              --- version 3.7 ----
+#                              --- version 4.0 ----
 #                              - supports Jenkins -
 #
 #-------------------------------------------------------------------------------------------
@@ -167,29 +167,19 @@ endif
 #-------------------------------------------------------------------------------------------
 
 # list of objects for your binding directory (format: pgmname_BNDDIRLIST)
-testing_BNDDIRLIST = testing.entrymod logerrors.entrysrv
-empclshst_BNDDIRLIST = empclshst.entrymod logerrors.entrysrv 
-logerrors_BNDDIRLIST = logerrors.entrymod 
-gentable_BNDDIRLIST = logerrors.entrysrv gentable.entrymod gentblmod2.entrymod
-test_BNDDIRLIST = test.entrymod logerrors.entrysrv
-gentable2_BNDDIRLIST = logerrors.entrysrv gentable2.entrymod
+gentable_BNDDIRLIST = logerrors.entrysrv gentable.entrymod gentblmod.entrymod
 
 
 
 # everything you want to build here
 all: tables programs
 
-tables: tabledef.sqlobj ctrfldref.sqlobj apivendor.sqlobj apicust.sqlobj
+tables: tabledef.sqlobj 
 
-programs: gentable.pgm test.pgm gentable2.pgm
+programs: gentable.pgm
 
 # dependency lists
-empclshst.pgm: empclshst.bnddir empclshst.sqlrpgmod
-logerrors.srvpgm: logerrors.bnddir logerrors.sqlrpgmod logerrors.bndsrc
-logerrors.rpgmod: logerrors.sqlrpgle
-gentable.pgm: gentable.bnddir gentblmod.sqlrpgmod gentable.lvl2mod gentblmod2.sqlrpgmod
-test.pgm: test.bnddir test.sqlrpgmod
-gentable2.pgm: gentable2.bnddir gentable2.sqlrpgmod 
+gentable.pgm: gentable.bnddir gentblmod.sqlrpgmod gentable.lvl2mod
  
 
 
