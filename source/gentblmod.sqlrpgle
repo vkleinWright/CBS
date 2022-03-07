@@ -60,7 +60,7 @@
            tableName         like(longName) const;
            sysTableName      like(shortName) const;
            tableText         like(longName) const;  // table description
-           type              char(1) const;  // R - regular  T - temporal
+           type              char(1) const;  // R - regular  T - temporal   W - work
          End-Pi ;
 
          Dcl-s upperTableName    char(50);
@@ -170,7 +170,7 @@
              declare c_fieldInfo cursor for
                 select tabname, upper(longfld), upper(fld), upper(data_type),
                        data_size, numscale, defval, ctext, keys, frnkey,
-                       upper(fkeytbl), user_id, pstatus
+                       upper(fkeytbl), user_id, pstatus, lineno
                     from   tabledef t
                       where lower(table_name) =  lower(:sysTableName)
                       and pstatus = 'NEW'
@@ -332,6 +332,20 @@
                                   // ccsid or spaces
                                   TWO_SPACES + CCSIDstr + TWO_SPACES +
                                   NOT_NULL + TWO_SPACES + %trim(defaultStr) + ',' ;
+               other;
+                    lineToWrite = SPACES_ + %trim(longfldName) +
+                                  // padding before short name
+                                  %subst(JUST_SPACES : 1 : %int(longNameLength) - %len(%trim(longfldName)))  +
+                                  TWO_SPACES + COLUMN_SPACES  +
+                                  // padding for missing short name
+                                  %subst(JUST_SPACES : 1 : %int(shortNameLength)) +
+                                  //%trim(column_def)  +  '  ' +
+                                  TWO_SPACES + %trim(dataTypeStr) +
+                                  // padding after type def
+                                  %subst(JUST_SPACES : 1 : %int(typeDefLength) - %len(%trim(dataTypeStr))) +
+                                  // ccsid or spaces
+                                  TWO_SPACES + CCSIDstr + TWO_SPACES +
+                                  NOT_NULL + TWO_SPACES + %trim(defaultStr) + ',';
 
              EndSl;
 
@@ -607,7 +621,7 @@
          Dcl-s pValue char(200);
 
          pValue =  SPACES_ + 'UPDATED_BY ' +
-                         'FOR COLUMN UPDATEDBY  VARCHAR(18)  CCSID 37     NOT NULL  DEFAULT USER,';
+                         'FOR COLUMN UPDATEDBY  VARCHAR(18) GENERATED ALWAYS AS (USER),';
          writeLine(pvalue);
 
          return ;
@@ -668,7 +682,7 @@
          Exec SQL
           insert into tabledef
             (table_name, longfld, fld, data_type, data_size, numeric_scale,
-                                                     default_val, column_text, keys, frnkey, fkeytbl)
+                                                     default_val, column_text, keys, frnkey, fkeytbl, lineno)
             select
               lower(:sysTableName),
               --the second  -- long name
@@ -690,23 +704,25 @@
               -- the tenth -- is foreign key
               cast( substr(line,   locate_in_string(line, ',', 1,8) +1 , locate_in_string(line, ',',1, 9) - locate_in_string(line, ',', 1,8) -1) as char(1)),
               -- the eleventh -- is  table the foreign key connects to
-              cast(substr(line,   locate_in_string(line, ',', 1,9) +1 ) as char(10)) FROM
-              TABLE(QSYS2/IFS_READ(
+              cast(substr(line,   locate_in_string(line, ',', 1,9) +1 ) as char(10)),
+              LINE_NUMBER
+            from TABLE(QSYS2/IFS_READ(
                PATH_NAME => :mypath))x
                  where substr(trim(line),1,1) in ('A', 'a', 'B', 'b', 'C', 'c', 'D', 'd', 'E', 'e',
                                                   'F', 'f', 'G', 'g', 'H', 'h', 'I', 'i', 'J', 'j',
                                                   'K', 'k', 'L', 'l', 'M', 'm', 'N', 'n', 'O', 'o',
                                                   'P', 'p', 'Q', 'q', 'R', 'r', 'S', 's', 'T', 't',
                                                   'U', 'u', 'V', 'v', 'W', 'w', 'X', 'x', 'Y', 'y',
-                                                  'Z', 'z');
+                                                  'Z', 'z')
+                 order by LINE_NUMBER;
 
 
-                logMsgAndSQLError( program : %proc() : xSQLState :
-                   'Here is what we get when writing csv data for table ' + %trim(sysTableName) + '.');
+//                logMsgAndSQLError( program : %proc() : xSQLState :
+//                   'Here is what we get when writing csv data for table ' + %trim(sysTableName) + '.');
 
-                If (sqlstt <> NO_MORE_ROWS and sqlstt <> '00000');
-               logMsgAndSQLError( program : %proc() : xSQLState :
-                   'failed when writing csv data for table ' + %trim(sysTableName) + '.');
+                If (sqlstt <> SUCCESS and sqlstt <> NO_MORE_ROWS and sqlstt <> Embeded_Select_Okay);
+                   logMsgAndSQLError( program : %proc() : xSQLState :
+                      'failed when writing csv data for table ' + %trim(sysTableName) + '.');
 
                 isOK = *off;
             EndIf;
@@ -801,7 +817,7 @@
 
            when fldDefs(idx).TABNAME <> *blanks;
               field_def = %ScanRpl(' ' : '_' : %trim(fldDefs(idx).longfld));
-              field_lbl  = fldDefs(idx).longfld;
+              field_lbl  = %ScanRpl('_' : ' ' : %trim(fldDefs(idx).longfld));
               field_text = fldDefs(idx).longfld;
               column_text = fldDefs(idx).ctext;
 
@@ -871,7 +887,7 @@
             EndIf;
 
             writeLine( SPACES_ + %trim(UpperSysTableName) + 'ID' +
-                                 %subst(JUST_SPACES : 1 : paddedLength) +
+                                 %subst(JUST_SPACES : 1 : numberOfSpaces) +
                                  'IS ''' +  %trim(UpperSysTableName) + ' ID'',');
          EndIf;
 
@@ -960,15 +976,15 @@
          writeLine ('');
          writeLine ('CREATE OR REPLACE TABLE FILELIB/' + %trim(upperTableName) +
                         '_HIST FOR SYSTEM NAME ' + %trim(upperSysTableName) + 'H LIKE ' +
-                        %trim(upperTableName) + ' ;                  -- <====<<<<<<');
+                        'FILELIB/' + %trim(upperTableName) + ' ;                  -- <====<<<<<<');
 
          writeLine ('');
-         writeLine ('LABEL ON TABLE FILELIB/' + %trim(upperTableName) +
-                        '_HIST IS ''   hist'' ;                -- <====<<<<<< ');
+         writeLine ('LABEL ON TABLE FILELIB/' + %trim(upperSysTableName) +
+                        'H IS ''   hist'' ;                -- <====<<<<<< ');
 
           writeLine ('');
           writeLine ('ALTER TABLE FILELIB/' + %trim(upperTableName) +
-                    ' ADD VERSIONING USE HISTORY TABLE ' + %trim(upperTableName) + '_HIST ;');
+                    ' ADD VERSIONING USE HISTORY TABLE FILELIB/' + %trim(upperSysTableName) + 'H ;');
 
          return ;
        END-PROC ;
@@ -1161,7 +1177,6 @@
 
           Dcl-s keyName       like(longName);
           Dcl-s refTable      like(shortName);
-          Dcl-s longRefName   like(longName);
           Dcl-s shortRefName  like(shortName);
           Dcl-s idx           packed(3:0) inz(1);
 

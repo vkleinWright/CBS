@@ -29,7 +29,8 @@ CREATE or replace TABLE FILELIB/TABLE_FIELD_DEFINITION FOR SYSTEM NAME TABLEDEF 
 	FOREIGN_KEY_FLAG  FOR COLUMN FRNKEY     CHAR(1)     CCSID 37 NOT NULL DEFAULT '' , 
 	FOREIGN_KEY_TABLE FOR COLUMN FKEYTBL    CHAR(10)    CCSID 37 NOT NULL DEFAULT '' , 
 	USER_ID                                 VARCHAR(18) ALLOCATE(18) CCSID 37 NOT NULL DEFAULT USER , 
-	PROCESSING_STATUS FOR COLUMN PSTATUS    CHAR(10) CCSID 37 NOT NULL DEFAULT 'NEW' )   
+	PROCESSING_STATUS FOR COLUMN PSTATUS    CHAR(10)    CCSID 37 NOT NULL DEFAULT 'NEW' ,
+	LINE_NUMBER       FOR COLUMN LINENO     SMALLINT             NOT NULL DEFAULT 0 )   
 	  
 	RCDFMT TABLEDEF   ; 
   
@@ -37,30 +38,34 @@ LABEL ON TABLE FILELIB/TABLE_FIELD_DEFINITION
 	IS 'Table definition work file' ; 
   
 LABEL ON COLUMN FILELIB/TABLE_FIELD_DEFINITION 
-( TABLE_NAME          IS 'Table                   Name' , 
-	LONG_FIELD_NAME   IS 'Long                    Field                   Name' , 
-	FIELD_NAME        IS 'Field                   Name' , 
-	DATA_TYPE         IS 'Data                    Type' , 
-	DATA_SIZE         IS 'Data                    Size                    (length)' , 
-	NUMERIC_SCALE     IS 'Numeric                 Scale' , 
-	DEFAULT_VAL       IS 'Default                 Value' , 
-	KEY_ORDER         IS 'Key                     Order' , 
-	FOREIGN_KEY_FLAG  IS 'Foreign                 Key                     Flag' , 
-	FOREIGN_KEY_TABLE IS 'Foreign             	Key                 	Table' , 
-	USER_ID           IS 'User ID' ) ; 
+--                    IS 'AAAAA               BBBBB               CCCCC               ' 
+(   TABLE_NAME        IS 'Table               Name' , 
+    LONG_FIELD_NAME   IS 'Long                Field               Name' , 
+    FIELD_NAME        IS 'Field               Name' , 
+    DATA_TYPE         IS 'Data                Type' , 
+    DATA_SIZE         IS 'Data                Size                (length)' , 
+    NUMERIC_SCALE     IS 'Numeric             Scale' , 
+    DEFAULT_VAL       IS 'Default             Value' ,
+    COLUMN_TEXT       IS 'Column              Text', 
+    KEY_ORDER         IS 'Key                 Order' , 
+    FOREIGN_KEY_FLAG  IS 'Foreign             Key                 Flag' , 
+    FOREIGN_KEY_TABLE IS 'Foreign             Key                 Table' , 
+    USER_ID           IS 'User ID',  
+    LINE_NUMBER       IS 'Line                Number') ;
   
 LABEL ON COLUMN FILELIB/TABLE_FIELD_DEFINITION 
 ( TABLE_NAME          TEXT IS 'Table Name' , 
-	LONG_FIELD_NAME   TEXT IS 'Long Field Name' , 
-	FIELD_NAME        TEXT IS 'Field Name' , 
-	DATA_TYPE         TEXT IS 'Data Type' , 
-	DATA_SIZE         TEXT IS 'Data Size (length)' , 
-	NUMERIC_SCALE     TEXT IS 'Numeric Scale' , 
-	DEFAULT_VAL       TEXT IS 'Default Value' , 
-	KEY_ORDER         TEXT IS 'Key Order' , 
-	FOREIGN_KEY_FLAG  TEXT IS 'Foreign Key Flag' , 
-	FOREIGN_KEY_TABLE TEXT IS 'Foreign key table' , 
-	USER_ID           TEXT IS 'User ID' ) ; 
+    LONG_FIELD_NAME   TEXT IS 'Long Field Name' , 
+    FIELD_NAME        TEXT IS 'Field Name' , 
+    DATA_TYPE         TEXT IS 'Data Type' , 
+    DATA_SIZE         TEXT IS 'Data Size (length)' , 
+    NUMERIC_SCALE     TEXT IS 'Numeric Scale' , 
+    DEFAULT_VAL       TEXT IS 'Default Value' ,
+    COLUMN_TEXT       TEXT IS 'Column text', 
+    KEY_ORDER         TEXT IS 'Key Order' , 
+    FOREIGN_KEY_FLAG  TEXT IS 'Foreign Key Flag' , 
+    FOREIGN_KEY_TABLE TEXT IS 'Foreign key table' , 
+    USER_ID           TEXT IS 'User ID' ) ; 
   
 GRANT DELETE , INSERT , SELECT , UPDATE   
 ON FILELIB/TABLE_FIELD_DEFINITION TO PUBLIC ; 
