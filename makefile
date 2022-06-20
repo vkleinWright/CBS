@@ -1,5 +1,5 @@
 #
-#                              --- version 3.7 ----
+#                              --- version 4.0 ----
 #                              - supports Jenkins -
 #
 #-------------------------------------------------------------------------------------------
@@ -7,10 +7,10 @@
 #-------------------------------------------------------------------------------------------
 
 # library for programs  
-BINLIB=WSCLIB
+BINLIB=WSCCBS
 
 # library for data 
-FILELIB=WSCFIL
+FILELIB=WSCCBS
 
 # library for CNX
 CNXLIB=VALENCE52P
@@ -167,23 +167,19 @@ endif
 #-------------------------------------------------------------------------------------------
 
 # list of objects for your binding directory (format: pgmname_BNDDIRLIST)
-testing_BNDDIRLIST = testing.entrymod logerrors.entrysrv
-empclshst_BNDDIRLIST = empclshst.entrymod logerrors.entrysrv 
-logerrors_BNDDIRLIST = logerrors.entrymod 
-
+gentable_BNDDIRLIST = logerrors.entrysrv gentable.entrymod gentblmod.entrymod
 
 
 
 # everything you want to build here
-all: logerrors.srvpgm tmpeqp.pffile
-#all: empoccchg.sqlobj uclxref.sqlobj return_employee_occupation_description.sqlobj empclshst.pgm unxrefcnx.cnxpgm
+all: tables programs
 
+tables: tabledef.sqlobj 
+
+programs: gentable.pgm
 
 # dependency lists
-empclshst.pgm: empclshst.bnddir empclshst.sqlrpgmod
-logerrors.srvpgm: logerrors.bnddir logerrors.sqlrpgmod logerrors.bndsrc
-logerrors.rpgmod: logerrors.sqlrpgle
- 
+gentable.pgm: gentable.bnddir gentblmod.sqlrpgmod gentable.lvl2mod
  
 
 
