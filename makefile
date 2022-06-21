@@ -65,6 +65,8 @@ ifeq ($(GIT_BRANCH),origin/dev)
     STAGE=DEV
 else ifeq ($(GIT_BRANCH),origin/uat)
     STAGE=UAT
+else ifeq ($(GIT_BRANCH),origin/test)
+    STAGE=UAT
 else 
     STAGE=MAIN
 endif
