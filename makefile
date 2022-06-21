@@ -142,9 +142,9 @@ else
    EXP_LIBLIST = $(INIT_LIBLIST) $(CNXLIB) $(BASELIBS) $(UAT_LIBLIST) $(ADDLIBS)   
 endif
 
-#LIBLIST = $(shell echo $(EXP_LIBLIST)| awk '{for (i=NF;i>1;i--) if (!a[$$i]++) printf("%s%s",$$i,FS)}{printf("\\n")}'| awk '{ for (i=NF; i>1; i--) printf("%s ",$$i); print $$1; }') 
+LIBLIST = $(shell echo $(EXP_LIBLIST)| awk '{for (i=NF;i>1;i--) if (!a[$$i]++) printf("%s%s",$$i,FS)}{printf("\\n")}'| awk '{ for (i=NF; i>1; i--) printf("%s ",$$i); print $$1; }') 
 
-LIBLIST =  $(EXP_LIBLIST)
+#LIBLIST =  $(EXP_LIBLIST)
  
 #path for source
 VPATH = source:header
