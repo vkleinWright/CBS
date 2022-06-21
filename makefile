@@ -142,7 +142,7 @@ else
    EXP_LIBLIST = $(INIT_LIBLIST) $(CNXLIB) $(BASELIBS) $(UAT_LIBLIST) $(ADDLIBS)   
 endif
 
-LIBLIST = $(shell echo foo bah| awk '{for (i=NF;i>1;i--) if (!a[$$i]++) printf("%s%s",$$i,FS)}{printf("\\n")}'| awk '{ for (i=NF; i>1; i--) printf("%s ",$$i); print $$1; }') 
+LIBLIST = $(shell "echo foo bah| awk '{for (i=NF;i>1;i--) if (!a[\$$i]++) printf(\"%s%s\",\$$i,FS)}{printf(\"\\n\")}'| awk '{ for (i=NF; i>1; i--) printf(\"%s \",\$$i); print \$$1; }'") 
 
 #LIBLIST =  $(EXP_LIBLIST)
  
