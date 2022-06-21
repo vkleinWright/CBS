@@ -1,5 +1,5 @@
 #
-#                              --- version 4.0 ----
+#                              --- version 4.2 ----
 #                              - supports Jenkins -
 #
 #-------------------------------------------------------------------------------------------
@@ -17,7 +17,12 @@ CNXLIB=VALENCE52P
 
 # Other libraries you need for rpg compiles (in biblical order - the last will be first)
 # Your BINLIB and FILELIB will be added to the end
-INIT_LIBLIST = CMSFIL  
+INIT_LIBLIST = CMSFIL WSCFIL WSCLIB
+
+# Libraries you will need for UAT for rpg compiles (in biblical order - the last will be first)
+# If this build is not at production level, it will be added between the intial libraries and
+# your BINLIB and FILELIB will be added to the end
+UAT_LIBLIST :=  WSCFIL2 WSCLIB2 WSCFIL2
 
 # other repositories your code might need - in the order you would expect
 # Note: Utility is standard and should always be at the end
@@ -58,10 +63,10 @@ endif
 
 ifeq ($(GIT_BRANCH),origin/dev)
     STAGE=DEV
-else ifeq ($(GIT_BRANCH),origin/test)
-    STAGE=TEST
+else ifeq ($(GIT_BRANCH),origin/uat)
+    STAGE=UAT
 else 
-    STAGE=MASTER
+    STAGE=MAIN
 endif
 
 
@@ -125,11 +130,18 @@ ifeq ($(strip $(SYS)),)
   endif
 endif
 
-ifeq ($(SYS),WTSBLADE.WRIGHTTREE.COM) 
-   LIBLIST = $(subst WRT400,WRT,$(INIT_LIBLIST)) $(CNXLIB) $(subst WRT400,WRT,$(BASELIBS)) $(subst WRT400,WRT,$(ADDLIBS))
-else 
-   LIBLIST = $(INIT_LIBLIST) $(CNXLIB) $(BASELIBS) $(ADDLIBS)   
+ifeq ($(STAGE),MAIN)
+    UAT_LIBLIST=''
 endif
+
+ifeq ($(SYS),WTSBLADE.WRIGHTTREE.COM) 
+   EXP_LIBLIST = $(subst WRT400,WRT,$(INIT_LIBLIST)) $(CNXLIB) $(subst WRT400,WRT,$(BASELIBS)) $(UAT_LIBLIST)  $(subst WRT400,WRT,$(ADDLIBS))
+else 
+   EXP_LIBLIST = $(INIT_LIBLIST) $(CNXLIB) $(BASELIBS) $(UAT_LIBLIST) $(ADDLIBS)   
+endif
+
+LIBLIST = $(shell echo $(EXP_LIBLIST)| awk '{for (i=NF;i>1;i--) if (!a[$$i]++) printf("%s%s",$$i,FS)}{printf("\n")}'| awk '{ for (i=NF; i>1; i--) printf("%s ",$$i); print $$1; }') 
+
  
 #path for source
 VPATH = source:header
@@ -142,22 +154,21 @@ WORKSPACE = /home/WSCOWNER/.jenkins/workspace
 
 # If we are working in our own library
 ifeq ($(STAGE),DEVELOPER)
-    SEARCHPATH += $(foreach repo,$(REPOLIST),  ''$(dir $(CURDIR))$(repo)'' ''$(WORKSPACE)/$(repo)-test'' ''$(WORKSPACE)/$(repo)-master'' ''/wright-service-corp/$(repo)'' )
+    SEARCHPATH += $(foreach repo,$(REPOLIST),  ''$(dir $(CURDIR))$(repo)'' ''$(WORKSPACE)/$(repo)-uat'' ''$(WORKSPACE)/$(repo)-main'' ''/wright-service-corp/$(repo)'' )
 	
 #If we are working in Jenkins dev
 else ifeq ($(STAGE),DEV)
-        SEARCHPATH += $(foreach repo,$(REPOLIST), ''$(WORKSPACE)/$(repo)-dev'' ''$(WORKSPACE)/$(repo)-test'' ''$(WORKSPACE)/$(repo)-master'' ''/wright-service-corp/$(repo)'' )
+        SEARCHPATH += $(foreach repo,$(REPOLIST), ''$(WORKSPACE)/$(repo)-dev'' ''$(WORKSPACE)/$(repo)-uat'' ''$(WORKSPACE)/$(repo)-main'' ''/wright-service-corp/$(repo)'' )
 		
-#If we are working in Jenkins test
-else ifeq ($(STAGE),TEST)
-        SEARCHPATH += $(foreach repo,$(REPOLIST), ''$(WORKSPACE)/$(repo)-test'' ''$(WORKSPACE)/$(repo)-master'' ''/wright-service-corp/$(repo)'' )
+#If we are working in Jenkins uat
+else ifeq ($(STAGE),UAT)
+        SEARCHPATH += $(foreach repo,$(REPOLIST), ''$(WORKSPACE)/$(repo)-uat'' ''$(WORKSPACE)/$(repo)-main'' ''/wright-service-corp/$(repo)'' )
 	
 else
-    #If we are working Jenkins master or wright-service-corp
-        SEARCHPATH += $(foreach repo,$(REPOLIST), ''$(WORKSPACE)/$(repo)-master'' ''/wright-service-corp/$(repo)'' )
+    #If we are working Jenkins main or wright-service-corp
+        SEARCHPATH += $(foreach repo,$(REPOLIST), ''$(WORKSPACE)/$(repo)-main'' ''/wright-service-corp/$(repo)'' )
 endif
 #--------------------------------------------------------------------
-
 
 
 
@@ -242,6 +253,26 @@ gentable.pgm: gentable.bnddir gentblmod.sqlrpgmod gentable.lvl2mod
 	COMMIT(*NONE) OBJTYPE(*PGM) OPTION(*EVENTF) REPLACE(*YES) DBGVIEW($(DBGVIEW)) \
 	TEXT($(REPO_TEXT)) \
 	compileopt('INCDIR( $(SEARCHPATH))')"; 
+	@touch $@
+
+
+%.lvl1mod: %.sqlrpgle
+	liblist -a $(LIBLIST);\
+	system "CRTSQLRPGI OBJ($(BINLIB)/$*) SRCSTMF('./source/$*.sqlrpgle') \
+	COMMIT(*NONE) OBJTYPE(*MODULE) OPTION(*EVENTF) REPLACE(*YES) DBGVIEW($(DBGVIEW)) \
+	RPGPPOPT(*LVL1) \
+	TEXT($(REPO_TEXT)) \
+	compileopt('INCDIR( $(SEARCHPATH))')";
+	@touch $@
+
+
+%.lvl1pgm:
+	liblist -a $(LIBLIST);\
+	system "CRTSQLRPGI OBJ($(BINLIB)/$*) SRCSTMF('./source/$*.sqlrpgle') \
+	COMMIT(*NONE) OBJTYPE(*PGM) OPTION(*EVENTF) REPLACE(*YES) DBGVIEW($(DBGVIEW)) \
+	RPGPPOPT(*LVL1) \
+	TEXT($(REPO_TEXT)) \
+	compileopt('INCDIR( $(SEARCHPATH))')";
 	@touch $@
 
 
@@ -368,3 +399,4 @@ gentable.pgm: gentable.bnddir gentblmod.sqlrpgmod gentable.lvl2mod
 %.sqlrpgle:
     # Basically do nothing..
 	@echo ""
+	
