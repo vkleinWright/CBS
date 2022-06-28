@@ -137,9 +137,9 @@ ifeq ($(STAGE),MAIN)
 endif
 
 ifeq ($(SYS),WTSBLADE.WRIGHTTREE.COM) 
-   EXP_LIBLIST = $(subst WRT400,WRT,$(INIT_LIBLIST)) $(CNXLIB) $(subst WRT400,WRT,$(BASELIBS)) $(UAT_LIBLIST)  $(subst WRT400,WRT,$(ADDLIBS))
+   EXP_LIBLIST := $(subst WRT400,WRT,$(INIT_LIBLIST)) $(CNXLIB) $(subst WRT400,WRT,$(BASELIBS)) $(UAT_LIBLIST)  $(subst WRT400,WRT,$(ADDLIBS))
 else 
-   EXP_LIBLIST = $(INIT_LIBLIST) $(CNXLIB) $(BASELIBS) $(UAT_LIBLIST) $(ADDLIBS)   
+   EXP_LIBLIST := $(INIT_LIBLIST) $(CNXLIB) $(BASELIBS) $(UAT_LIBLIST) $(ADDLIBS)   
 endif
 
 #LIBLIST = $(shell """#!/bin/bash echo $(EXP_LIBLIST)| awk '{for (i=NF;i>1;i--) if (!a[$$i]++) printf("%s%s",$$i,FS)}'| awk '{ for (i=NF; i>1; i--) printf("%s ",$$i); print $$1; }' """)
