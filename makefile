@@ -36,7 +36,7 @@ REPOLIST :=  Utility
 
 
 # shell to use (for consistency)
-SHELL=/QOpenSys/usr/bin/qsh
+SHELL=/QOpenSys/usr/bin/ksh
 
 # Compile option for easy debugging
 DBGVIEW=*SOURCE
