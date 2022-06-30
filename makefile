@@ -144,7 +144,7 @@ endif
 
 #LIBLIST = $(shell """#!/bin/bash echo $(EXP_LIBLIST)| awk '{for (i=NF;i>1;i--) if (!a[$$i]++) printf("%s%s",$$i,FS)}'| awk '{ for (i=NF; i>1; i--) printf("%s ",$$i); print $$1; }' """)
 
-LIBLIST = $(shell echo $(EXP_LIBLIST)|  /QOpenSys/pkgs/bin/tr ' ' '\n' | /QOpenSys/pkgs/bin/tac | /QOpenSys/pkgs/bin/tac | /QOpenSys/pkgs/bin/tr '\n' ' ') 
+LIBLIST = $(shell echo $(EXP_LIBLIST)|  /QOpenSys/pkgs/bin/tr ' ' '\n' | /QOpenSys/pkgs/bin/tac |  awk '!seen[$$0]++' | /QOpenSys/pkgs/bin/tac | /QOpenSys/pkgs/bin/tr '\n' ' ') 
 
 #LIBLIST =  $(EXP_LIBLIST)
  
