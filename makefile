@@ -144,23 +144,8 @@ endif
 
 #LIBLIST = $(shell """#!/bin/bash echo $(EXP_LIBLIST)| awk '{for (i=NF;i>1;i--) if (!a[$$i]++) printf("%s%s",$$i,FS)}'| awk '{ for (i=NF; i>1; i--) printf("%s ",$$i); print $$1; }' """)
 
-LIBLIST = $(shell echo $(EXP_LIBLIST)|  tr ' ' '\n' | tac | awk '!seen[$0]++' | tac | tr '\n' ' ') 
-LIBLIST_1 = $(shell """ echo \$(EXP_LIBLIST)| awk \'{for (i=NF;i>0;i--) if (!a[\$\$i]++) printf(\"%s%s\",\$\$i,FS)}\'| awk \'{ for (i=NF; i>1; i--) printf(\"%s \",\$\$i); print \$\$1; }\' """)
-LIBLIST_2 = $(shell """ echo \$(EXP_LIBLIST)| awk \'{for (i=NF;i>0;i--) if (!a[\$\$i]++) printf(\"%s%s\",\$\$i,FS)}\'| awk \'{ for (i=NF; i>1; i--) printf(\"%s \",\$\$i); print \$\$1; }\' """)
-LIBLIST_3 = $(shell """ echo \$(EXP_LIBLIST)| awk \'{for (i=NF;i>0;i--) if (!a[\$$i]++) printf(\"%s%s\",\$$i,FS)}\'| awk \'{ for (i=NF; i>1; i--) printf(\"%s \",\$$i); print \$$1; }\' """)
-LIBLIST_4 = $(shell """ echo \$(EXP_LIBLIST)| awk \'{for (i=NF;i>0;i--) if (!a[\$\$i]++) printf(\"%s%s\",\$\$i,FS)}\'| awk \'{ for (i=NF; i>1; i--) printf(\"%s \",\$\$i); print \$\$1; }\' """)
-LIBLIST_5 = $(shell """ echo \$(EXP_LIBLIST)| awk '{for (i=NF;i>0;i--) if (!a[\$\$i]++) printf(\"%s%s\",\$\$i,FS)}'| awk '{ for (i=NF; i>1; i--) printf(\"%s \",\$\$i); print \$\$1; }' """)
-LIBLIST_6 = $(shell """ echo \$(EXP_LIBLIST)| awk '{for (i=NF;i>0;i--) if (!a[\$\$i]++) printf(\"%s%s\",\$\$i,FS)}'| awk '{ for (i=NF; i>1; i--) printf(\"%s \",\$\$i); print \$\$1; }' """)
-LIBLIST_7 = $(shell """ echo \$(EXP_LIBLIST)| awk \'{for (i=NF;i>0;i--) if (!a[\$$i]++) printf("%s%s",\$$i,FS)}\'| awk \'{ for (i=NF; i>1; i--) printf("%s ",\$$i); print \$$1; }\' """)
-LIBLIST_8 = $(shell """ echo \$(EXP_LIBLIST)| awk \'{for (i=NF;i>0;i--) if (!a[\$\$i]++) printf("%s%s",\$\$i,FS)}\'| awk \'{ for (i=NF; i>1; i--) printf("%s ",\$\$i); print \$\$1; }\' """)
-LIBLIST_11 = $(shell """ echo \$(EXP_LIBLIST)| awk \'{for (i=NF;i>0;i--) if (!a[\$\$i]++) printf(\"%s%s\",\$\$i,FS)}\'| awk \'{ for (i=NF; i>1; i--) printf(\"%s \",\$\$i); print \$\$1; }\' """)
-LIBLIST_12 = $(shell """ echo \$(EXP_LIBLIST)| awk \'{for (i=NF;i>0;i--) if (!a[\$\$i]++) printf(\"%s%s\",\$\$i,FS)}\'| awk \'{ for (i=NF; i>1; i--) printf(\"%s \",\$\$i); print \$\$1; }\' """)
-LIBLIST_13 = $(shell """ echo \$(EXP_LIBLIST)| awk \'{for (i=NF;i>0;i--) if (!a[\$$i]++) printf(\"%s%s\",\$$i,FS)}\'| awk \'{ for (i=NF; i>1; i--) printf(\"%s \",\$$i); print \$$1; }\' """)
-LIBLIST_14 = $(shell """ echo \$(EXP_LIBLIST)| awk \'{for (i=NF;i>0;i--) if (!a[\$\$i]++) printf(\"%s%s\",\$\$i,FS)}\'| awk \'{ for (i=NF; i>1; i--) printf(\"%s \",\$\$i); print \$\$1; }\' """)
-LIBLIST_15 = $(shell """ echo \$(EXP_LIBLIST)| awk '{for (i=NF;i>0;i--) if (!a[\$\$i]++) printf(\"%s%s\",\$\$i,FS)}'| awk '{ for (i=NF; i>1; i--) printf(\"%s \",\$\$i); print \$\$1; }' """)
-LIBLIST_16 = $(shell """ echo \$(EXP_LIBLIST)| awk '{for (i=NF;i>0;i--) if (!a[\$\$i]++) printf(\"%s%s\",\$\$i,FS)}'| awk '{ for (i=NF; i>1; i--) printf(\"%s \",\$\$i); print \$\$1; }' """)
-LIBLIST_17 = $(shell """ echo \$(EXP_LIBLIST)| awk \'{for (i=NF;i>0;i--) if (!a[\$$i]++) printf("%s%s",\$$i,FS)}\'| awk \'{ for (i=NF; i>1; i--) printf("%s ",\$$i); print \$$1; }\' """)
-LIBLIST_18 = $(shell """ echo \$(EXP_LIBLIST)| awk \'{for (i=NF;i>0;i--) if (!a[\$\$i]++) printf("%s%s",\$\$i,FS)}\'| awk \'{ for (i=NF; i>1; i--) printf("%s ",\$\$i); print \$\$1; }\' """)
+LIBLIST = $(shell echo $(EXP_LIBLIST)|  tr ' ' '\n' | /QOpenSys/pkgs/bin/tac | awk '!seen[$$0]++' | /QOpenSys/pkgs/bin/tac | tr '\n' ' ') 
+
 #LIBLIST =  $(EXP_LIBLIST)
  
 #path for source
@@ -221,24 +206,9 @@ gentable.pgm: gentable.bnddir gentblmod.sqlrpgmod gentable.lvl2mod
 # --- Standard Build Rules ------------------------------------- Do Not Change -------------
 #-------------------------------------------------------------------------------------------
 %.echo_me:
+	PATH=/QOpenSys/pkgs/bin:$(PATH)
 	@echo $(EXP_LIBLIST)
 	@echo $(LIBLIST)
-	@echo $(LIBLIST_1 )
-	@echo $(LIBLIST_2 )
-	@echo $(LIBLIST_3 )
-	@echo $(LIBLIST_4 )
-	@echo $(LIBLIST_5 )
-	@echo $(LIBLIST_6 )
-	@echo $(LIBLIST_7 )
-	@echo $(LIBLIST_8 )
-	@echo $(LIBLIST_11 )
-	@echo $(LIBLIST_12 )
-	@echo $(LIBLIST_13 )
-	@echo $(LIBLIST_14 )
-	@echo $(LIBLIST_15 )
-	@echo $(LIBLIST_16 )
-	@echo $(LIBLIST_17 )
-	@echo $(LIBLIST_18 )
 
 %.bnddir:
 	-system -q "CRTBNDDIR BNDDIR($(BINLIB)/$*) TEXT($(REPO_TEXT))"
