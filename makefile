@@ -206,7 +206,6 @@ gentable.pgm: gentable.bnddir gentblmod.sqlrpgmod gentable.lvl2mod
 # --- Standard Build Rules ------------------------------------- Do Not Change -------------
 #-------------------------------------------------------------------------------------------
 %.echo_me:
-	PATH=/QOpenSys/pkgs/bin:$(PATH)
 	@echo $(EXP_LIBLIST)
 	@echo $(LIBLIST)
 
